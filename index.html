@@ -1,154 +1,84 @@
-<!-- Trigger rebuild -->
-git add index.html
-git commit -m "Trigger GitHub Pages rebuild"
-git push origin main
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Replit Web Embedder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; font-family: sans-serif; }
-    #toolbar {
-      position: fixed; top: 10px; left: 10px;
-      background: #222; color: white; padding: 10px; border-radius: 8px; z-index: 9999;
-      transition: transform 0.3s;
-    }
-    #toolbar.hidden { transform: translateX(-100%); }
-    #toggleToolbar {
-      position: absolute;
-      top: 50%;
-      right: -30px;
-      transform: translateY(-50%);
-      background: #222;
-      color: white;
-      padding: 8px;
-      border-radius: 0 4px 4px 0;
-      z-index: 10000;
-      cursor: pointer;
-    }
-    .settings { margin: 10px 0; display: none; }
+    #toolbar { position: fixed; top: 10px; left: 10px; background: #222; color: #fff; padding: 10px; border-radius: 8px; z-index: 9999; }
+    #toolbar.hidden { transform: translateX(-110%); transition: transform 0.3s; }
+    #toggleToolbar { position: absolute; top: 50%; right: -30px; transform: translateY(-50%); background: #222; color: #fff; padding: 8px; border-radius: 0 4px 4px 0; cursor: pointer; }
+    .settings { display: none; margin-top: 10px; }
     .settings.visible { display: block; }
-    .settings label { margin-right: 10px; display: block; margin-bottom: 5px; }
+    label { display: block; margin-bottom: 5px; }
     #content { padding-top: 120px; }
-    #advancedBtn { margin-left: 10px; }
   </style>
 </head>
 <body>
   <div id="toolbar">
     <button id="toggleToolbar">☰</button>
-    <input id="siteUrl" type="text" placeholder="https://example.com or example.org" style="width: 250px;" />
+    <input id="siteUrl" placeholder="https://example.com" style="width:250px" />
     <button onclick="loadSite()">Load</button>
-    <button id="toggleClicker" style="margin-left:10px;">Start Clicker</button>
+    <button id="toggleClicker">Start Clicker</button>
     <button id="advancedBtn">Advanced ▼</button>
     <div class="settings">
       <label>Click Speed (ms): <input type="number" id="clickSpeed" value="50" min="10" max="1000"></label>
       <label>Click Mode: 
         <select id="clickMode">
-          <option value="single">Single Click</option>
-          <option value="double">Double Click</option>
+          <option value="single">Single</option>
+          <option value="double">Double</option>
         </select>
       </label>
-      <label>Hold Ctrl + <input type="text" id="hotkey" value="C" maxlength="1" style="width:20px"> to toggle</label>
+      <label>Hotkey (Ctrl+): <input id="hotkey" value="C" maxlength="1" style="width:20px" /></label>
     </div>
   </div>
   <div id="content">Website will appear here...</div>
 
   <script>
-    // Toggle toolbar and advanced settings
-    document.getElementById('toggleToolbar').addEventListener('click', () => {
-      document.getElementById('toolbar').classList.toggle('hidden');
-    });
-    
-    document.getElementById('advancedBtn').addEventListener('click', () => {
-      const settings = document.querySelector('.settings');
-      settings.classList.toggle('visible');
-      document.getElementById('advancedBtn').textContent = 
-        settings.classList.contains('visible') ? 'Advanced ▼' : 'Advanced ►';
-    });
+    const $ = id => document.getElementById(id);
+    let lastX = 0, lastY = 0, clicking = false, intervalId;
 
-    const proxyBase = "";
-    const content = document.getElementById("content");
+    document.addEventListener("mousemove", e => (lastX = e.clientX, lastY = e.clientY));
+    document.addEventListener("keydown", e => e.ctrlKey && e.key.toUpperCase() === $('hotkey').value.toUpperCase() && $('toggleClicker').click());
 
-    async function loadSite() {
-      const url = document.getElementById("siteUrl").value.trim();
-      if (!url) {
-        content.innerHTML = 'Please enter a URL';
-        return;
-      }
-      
-      try {
-        const iframe = document.createElement('iframe');
-        iframe.style.width = '100%';
-        iframe.style.height = '100vh';
-        iframe.style.border = 'none';
-        iframe.src = proxyBase + encodeURIComponent(url);
-        content.innerHTML = '';
-        content.appendChild(iframe);
-        console.log('Site loaded successfully');
-      } catch (err) {
-        content.innerHTML = `Failed to load site: ${err.message}`;
-        console.error('Load error:', err);
-      }
+    $('toggleToolbar').onclick = () => $('toolbar').classList.toggle('hidden');
+    $('advancedBtn').onclick = () => {
+      const s = document.querySelector('.settings');
+      s.classList.toggle('visible');
+      $('advancedBtn').textContent = s.classList.contains('visible') ? 'Advanced ▼' : 'Advanced ►';
+    };
+
+    function loadSite() {
+      const url = $('siteUrl').value.trim();
+      if (!url) return $('content').innerHTML = 'Please enter a URL';
+      const iframe = document.createElement('iframe');
+      Object.assign(iframe.style, { width: '100%', height: '100vh', border: 'none' });
+      iframe.src = encodeURI(url);
+      $('content').innerHTML = ''; $('content').appendChild(iframe);
     }
 
-    // Simple autoclicker
-    let clicking = false, intervalId;
-    let lastX = 0, lastY = 0;
-    document.addEventListener("mousemove", e => { lastX = e.clientX; lastY = e.clientY; });
-
-    // Hotkey handler
-    document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.key.toUpperCase() === document.getElementById("hotkey").value.toUpperCase()) {
-        document.getElementById("toggleClicker").click();
-      }
-    });
-
-    function simulateClick(element) {
-      if (!element || document.getElementById("toolbar").contains(element)) return;
-      
-      element.click();
-      element.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
-      element.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
-      
-      if (document.getElementById("clickMode").value === "double") {
-        setTimeout(() => {
-          element.click();
-          element.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
-          element.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
-        }, 50);
-      }
+    function simulateClick(el) {
+      if (!el || $('toolbar').contains(el)) return;
+      ['mousedown', 'mouseup'].forEach(evt => el.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true })));
+      el.click();
+      if ($('clickMode').value === 'double') setTimeout(() => el.click(), 50);
     }
 
-    document.getElementById("toggleClicker").addEventListener("click", () => {
-      if (!clicking) {
-        clicking = true;
-        document.getElementById("toggleClicker").textContent = "Stop Clicker";
+    $('toggleClicker').onclick = () => {
+      clicking = !clicking;
+      $('toggleClicker').textContent = clicking ? 'Stop Clicker' : 'Start Clicker';
+      if (clicking) {
         intervalId = setInterval(() => {
           const iframe = document.querySelector('iframe');
-          if (iframe) {
-            try {
-              // Send click events to the iframe
-              iframe.contentWindow.postMessage({
-                type: 'click',
-                x: lastX,
-                y: lastY - iframe.getBoundingClientRect().top,
-                isDouble: document.getElementById("clickMode").value === "double"
-              }, '*');
-              
-              // Also try direct click
-              const el = document.elementFromPoint(lastX, lastY);
-              simulateClick(el);
-            } catch (e) {
-              console.log('Click attempt:', e);
-            }
-          }
-        }, parseInt(document.getElementById("clickSpeed").value));
-      } else {
-        clicking = false;
-        clearInterval(intervalId);
-        document.getElementById("toggleClicker").textContent = "Start Clicker";
-      }
-    });
+          if (!iframe) return;
+          try {
+            iframe.contentWindow.postMessage({ type: 'click', x: lastX, y: lastY - iframe.getBoundingClientRect().top, isDouble: $('clickMode').value === 'double' }, '*');
+            simulateClick(document.elementFromPoint(lastX, lastY));
+          } catch (e) { console.warn('Click error:', e); }
+        }, +$('clickSpeed').value);
+      } else clearInterval(intervalId);
+    };
   </script>
 </body>
 </html>
