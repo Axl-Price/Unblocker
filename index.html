@@ -1,63 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Search Engine</title>
+  <meta charset="UTF-8" />
+  <title>Player Search</title> <!-- Custom name -->
   <style>
-    body { margin: 0; font-family: sans-serif; }
-    #toolbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #222;
-      color: white;
-      padding: 10px;
-      display: flex;
-      gap: 10px;
-      z-index: 1000;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: white;
+      text-align: center;
     }
-    #toolbar input, #toolbar button {
-      padding: 8px;
+
+    h1 {
+      font-size: 60px;
+      margin-top: 100px;
+      color: #4285f4;
+      font-weight: normal;
+      letter-spacing: -2px;
+    }
+
+    #searchBar {
+      margin-top: 30px;
+    }
+
+    #query {
+      width: 60%;
+      padding: 12px 20px;
+      font-size: 18px;
+      border: 1px solid #ddd;
+      border-radius: 24px;
+      outline: none;
+    }
+
+    #goBtn, #unlockBtn {
+      padding: 10px 20px;
+      margin-top: 20px;
+      margin-left: 10px;
       border: none;
       border-radius: 4px;
-    }
-    #toolbar input {
-      flex: 1;
-    }
-    #toolbar button {
-      background: #00bfff;
+      background-color: #4285f4;
       color: white;
+      font-size: 16px;
       cursor: pointer;
     }
-    #autoclickerTools {
-      display: none;
-      gap: 10px;
-    }
+
     iframe {
-      margin-top: 60px;
       width: 100%;
-      height: calc(100vh - 60px);
+      height: calc(100vh - 220px);
       border: none;
+      display: none;
+      margin-top: 20px;
+    }
+
+    #pinInputBox, #autoclickerTools {
+      margin-top: 20px;
+      display: none;
+    }
+
+    #pinInputBox input {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #autoclickerTools input {
+      padding: 6px;
+      width: 80px;
+      margin-left: 10px;
     }
   </style>
 </head>
 <body>
 
-  <div id="toolbar">
-    <input type="text" id="siteInput" placeholder="Search" />
-    <button onclick="loadSite()">Go</button>
-    <button onclick="unlockTools()">PIN</button>
-    <div id="autoclickerTools">
-      <button id="toggleClicker">Start Clicker</button>
-      <input type="number" id="clickSpeed" value="100" min="10" max="1000" style="width: 70px;" title="Click speed (ms)">
-    </div>
+  <h1>MySearch</h1>
+
+  <div id="searchBar">
+    <input type="text" id="query" placeholder="Search or enter URL">
+    <button id="goBtn" onclick="loadSite()">Search</button>
+    <button id="unlockBtn" onclick="showPin()">PIN</button>
   </div>
 
-  <iframe id="viewer" src=""></iframe>
+  <div id="pinInputBox">
+    <input type="text" id="pinField" placeholder="Enter PIN">
+    <button onclick="checkPin()">Submit</button>
+  </div>
+
+  <div id="autoclickerTools">
+    <button id="clickToggle">Start Clicker</button>
+    <input type="number" id="clickSpeed" value="100" min="10" max="1000" />
+  </div>
+
+  <iframe id="viewer"></iframe>
 
   <script>
-    const correctPIN = 4226"; // Change this to your secret code
+    const correctPin = "4226";
     const iframe = document.getElementById("viewer");
-
-    let lastX = 0, lastY = 0; // To track mouse position
+    let lastX = 0, lastY = 0;
+    let clicking = false;
+    let interval;
 
     document.addEventListener("mousemove", (e) => {
       lastX = e.clientX;
@@ -65,65 +106,52 @@
     });
 
     function loadSite() {
-      const input = document.getElementById('siteInput').value.trim();
+      const input = document.getElementById("query").value.trim();
+      let url;
       if (/^https?:\/\//.test(input)) {
-        iframe.src = input;
-      } else if (input.includes('.')) {
-        iframe.src = 'https://' + input;
+        url = input;
+      } else if (input.includes(".")) {
+        url = "https://" + input;
       } else {
-        iframe.src = 'https://duckduckgo.com/?q=' + encodeURIComponent(input);
+        url = "https://duckduckgo.com/?q=" + encodeURIComponent(input);
+      }
+      iframe.src = url;
+      iframe.style.display = "block";
+    }
+
+    function showPin() {
+      document.getElementById("pinInputBox").style.display = "inline-block";
+    }
+
+    function checkPin() {
+      const pin = document.getElementById("pinField").value;
+      if (pin === correctPin) {
+        document.getElementById("autoclickerTools").style.display = "inline-block";
+        document.getElementById("pinInputBox").style.display = "none";
+      } else {
+        alert("Wrong PIN");
       }
     }
 
-    function unlockTools() {
-      const pin = prompt("Enter PIN:");
-      if (pin === correctPIN) {
-        document.getElementById("autoclickerTools").style.display = "flex";
-      } else {
-        alert("Incorrect PIN");
-      }
-    }
-
-    // Simple autoclicker logic
-    let clicking = false;
-    let intervalId;
-
-    document.getElementById("toggleClicker").addEventListener("click", () => {
+    document.getElementById("clickToggle").addEventListener("click", () => {
       const speed = parseInt(document.getElementById("clickSpeed").value);
       if (!clicking) {
         clicking = true;
-        document.getElementById("toggleClicker").textContent = "Stop Clicker";
-        intervalId = setInterval(() => {
+        document.getElementById("clickToggle").textContent = "Stop Clicker";
+        interval = setInterval(() => {
           try {
-            const iframeRect = iframe.getBoundingClientRect();
-            const xOffset = lastX - iframeRect.left;
-            const yOffset = lastY - iframeRect.top;
-            iframe.contentWindow.postMessage({
-              type: "click",
-              x: xOffset,
-              y: yOffset
-            }, "*");
+            const rect = iframe.getBoundingClientRect();
+            const x = lastX - rect.left;
+            const y = lastY - rect.top;
+            iframe.contentWindow.postMessage({ type: "click", x, y }, "*");
           } catch (e) {
-            console.error("Click failed:", e);
+            console.error(e);
           }
         }, speed);
       } else {
         clicking = false;
-        clearInterval(intervalId);
-        document.getElementById("toggleClicker").textContent = "Start Clicker";
-      }
-    });
-
-    // Optional: handle clicks inside iframe via postMessage
-    window.addEventListener("message", (e) => {
-      if (e.data.type === "click") {
-        const clickEvent = new MouseEvent("click", {
-          bubbles: true,
-          cancelable: true,
-          clientX: lastX,
-          clientY: lastY
-        });
-        document.elementFromPoint(lastX, lastY)?.dispatchEvent(clickEvent);
+        clearInterval(interval);
+        document.getElementById("clickToggle").textContent = "Start Clicker";
       }
     });
   </script>
