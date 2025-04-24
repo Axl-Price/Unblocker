@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Web Embedder + Autoclicker</title>
+  <title>Search Engine</title>
   <style>
     body { margin: 0; font-family: sans-serif; }
     #toolbar {
@@ -42,7 +42,91 @@
 <body>
 
   <div id="toolbar">
-    <input type="text" id="siteInput" placeholder="Enter URL or search..." />
+    <input type="text" id="siteInput" placeholder="Search" />
     <button onclick="loadSite()">Go</button>
-    <button onclick="unlockTools()">🔒 Unlock Tools</button>
-    <div id="autoclicker
+    <button onclick="unlockTools()">PIN</button>
+    <div id="autoclickerTools">
+      <button id="toggleClicker">Start Clicker</button>
+      <input type="number" id="clickSpeed" value="100" min="10" max="1000" style="width: 70px;" title="Click speed (ms)">
+    </div>
+  </div>
+
+  <iframe id="viewer" src=""></iframe>
+
+  <script>
+    const correctPIN = 4226"; // Change this to your secret code
+    const iframe = document.getElementById("viewer");
+
+    let lastX = 0, lastY = 0; // To track mouse position
+
+    document.addEventListener("mousemove", (e) => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    function loadSite() {
+      const input = document.getElementById('siteInput').value.trim();
+      if (/^https?:\/\//.test(input)) {
+        iframe.src = input;
+      } else if (input.includes('.')) {
+        iframe.src = 'https://' + input;
+      } else {
+        iframe.src = 'https://duckduckgo.com/?q=' + encodeURIComponent(input);
+      }
+    }
+
+    function unlockTools() {
+      const pin = prompt("Enter PIN:");
+      if (pin === correctPIN) {
+        document.getElementById("autoclickerTools").style.display = "flex";
+      } else {
+        alert("Incorrect PIN");
+      }
+    }
+
+    // Simple autoclicker logic
+    let clicking = false;
+    let intervalId;
+
+    document.getElementById("toggleClicker").addEventListener("click", () => {
+      const speed = parseInt(document.getElementById("clickSpeed").value);
+      if (!clicking) {
+        clicking = true;
+        document.getElementById("toggleClicker").textContent = "Stop Clicker";
+        intervalId = setInterval(() => {
+          try {
+            const iframeRect = iframe.getBoundingClientRect();
+            const xOffset = lastX - iframeRect.left;
+            const yOffset = lastY - iframeRect.top;
+            iframe.contentWindow.postMessage({
+              type: "click",
+              x: xOffset,
+              y: yOffset
+            }, "*");
+          } catch (e) {
+            console.error("Click failed:", e);
+          }
+        }, speed);
+      } else {
+        clicking = false;
+        clearInterval(intervalId);
+        document.getElementById("toggleClicker").textContent = "Start Clicker";
+      }
+    });
+
+    // Optional: handle clicks inside iframe via postMessage
+    window.addEventListener("message", (e) => {
+      if (e.data.type === "click") {
+        const clickEvent = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          clientX: lastX,
+          clientY: lastY
+        });
+        document.elementFromPoint(lastX, lastY)?.dispatchEvent(clickEvent);
+      }
+    });
+  </script>
+
+</body>
+</html>
