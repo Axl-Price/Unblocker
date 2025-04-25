@@ -34,6 +34,52 @@
     }
 
     iframe {
+      m<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PlayerSearch</title>
+  <style>
+    body {
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 50px;
+      cursor: url('https://cur.cursors-4u.net/others/oth-9/oth837.cur'), auto;
+    }
+
+    h1 {
+      font-size: 48px;
+      animation: glow 5s linear infinite;
+    }
+
+    @keyframes glow {
+      0% { color: red; }
+      25% { color: lime; }
+      50% { color: cyan; }
+      75% { color: magenta; }
+      100% { color: red; }
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      cursor: url('https://cur.cursors-4u.net/cursors/cur-9/cur826.cur'), pointer;
+      transition: box-shadow 0.3s;
+    }
+
+    button:hover {
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+    }
+
+    iframe {
       margin-top: 20px;
       width: 100%;
       height: 70vh;
@@ -66,7 +112,6 @@
       if (!input) return;
 
       if (isValidURL(input)) {
-        // Try loading the site through a CORS proxy
         try {
           const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(input)}`);
           const data = await res.json();
@@ -76,7 +121,6 @@
           iframe.srcdoc = `<h2 style='color:red;'>Failed to load the site.</h2>`;
         }
       } else {
-        // Perform Google search using embedded results
         try {
           const url = `https://www.google.com/search?q=${encodeURIComponent(input)}`;
           const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
